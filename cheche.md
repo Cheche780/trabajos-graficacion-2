@@ -60,6 +60,245 @@ cv.waitKey(0)
 cv.destroyAllWindows()
 ```
 
+### actividad 2 
+``` python 
+import cv2 as cv
+import numpy as np
+import math
+
+img = cv.imread('bob.png', 0)
+
+
+x, y = img.shape
+
+result_img = np.zeros((int(x * 2), int(y * 2)), dtype=np.uint8)
+
+angle1 = -30
+theta1 = math.radians(angle1)
+
+angle2 = 60
+theta2 = math.radians(angle2)
+
+scale = 2
+
+for i in range(int(x * scale)):
+    for j in range(int(y * scale)):
+
+        orig_x = int(i / scale)
+        orig_y = int(j / scale)
+
+
+        rotated_x1 = int((orig_x - x // 2) * math.cos(theta1) - (orig_y - y // 2) * math.sin(theta1) + x // 2)
+        rotated_y1 = int((orig_x - x // 2) * math.sin(theta1) + (orig_y - y // 2) * math.cos(theta1) + y // 2)
+
+        rotated_x2 = int((rotated_x1 - x // 2) * math.cos(theta2) - (rotated_y1 - y // 2) * math.sin(theta2) + x // 2)
+        rotated_y2 = int((rotated_x1 - x // 2) * math.sin(theta2) + (rotated_y1 - y // 2) * math.cos(theta2) + y // 2)
+
+        if 0 <= rotated_x2 < x and 0 <= rotated_y2 < y:
+            result_img[i, j] = img[rotated_x2, rotated_y2]
+
+
+cv.imshow('Original Image', img)
+cv.imshow('Rotated, Rotated, and Scaled Image', result_img)
+cv.waitKey(0)
+cv.destroyAllWindows()
+```
+
+### actividad 3 
+
+```
+import cv2 as cv
+import numpy as np
+import math
+
+img = cv.imread('bob.png', 0)
+
+
+x, y = img.shape
+
+
+result_img = np.zeros((int(x * 2), int(y * 2)), dtype=np.uint8)
+
+
+angle = 70
+theta = math.radians(angle)
+
+
+dx, dy = 20, 20
+
+
+scale = 2
+
+
+for i in range(int(x * scale)):
+    for j in range(int(y * scale)):
+
+        orig_x = int(i / scale)
+        orig_y = int(j / scale)
+
+        rotated_x = int((orig_x - x // 2) * math.cos(theta) - (orig_y - y // 2) * math.sin(theta) + x // 2)
+        rotated_y = int((orig_x - x // 2) * math.sin(theta) + (orig_y - y // 2) * math.cos(theta) + y // 2)
+
+        translated_x = rotated_x + dx
+        translated_y = rotated_y + dy
+
+        if 0 <= translated_x < x and 0 <= translated_y < y:
+            result_img[i, j] = img[translated_x, translated_y]
+
+cv.imshow('Original Image', img)
+cv.imshow('Rotated, Translated, and Scaled Image', result_img)
+cv.waitKey(0)
+cv.destroyAllWindows()
+```
+
+#### actividad de animaciones parametricas.
+
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
+![alt text](image-6.png)
+![alt text](image-7.png)
+![alt text](image-8.png)
+![alt text](image-9.png)
+
+
+### actividad Pelitita en Movimiento
+```
+import numpy as np
+import cv2 as cv
+
+# Iniciar la captura de video desde la cámara
+cap = cv.VideoCapture(0)
+
+# Verificar si la cámara se abrió correctamente
+if not cap.isOpened():
+    print("Error al abrir la cámara")
+    exit()
+
+# Obtener las dimensiones del video (ancho y alto de la cámara)
+frame_width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+frame_height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+
+# Parámetros para el flujo óptico Lucas-Kanade
+lk_params = dict(winSize=(15, 15), maxLevel=2,
+                 criteria=(cv.TERM_CRITERIA_EPS | cv.TERM_CRITERIA_COUNT, 10, 0.03))
+
+# Leer el primer frame de la cámara
+ret, first_frame = cap.read()
+
+if not ret:
+    print("Error al capturar el primer frame")
+    cap.release()
+    exit()
+
+first_frame = cv.flip(first_frame, 1)
+prev_gray = cv.cvtColor(first_frame, cv.COLOR_BGR2GRAY)
+
+# Posición inicial de la pelotita (centrada en la imagen)
+ball_pos = np.array([[frame_width // 2, frame_height // 2]], dtype=np.float32)
+ball_pos = ball_pos[:, np.newaxis, :]
+
+# Definir el recuadro azul 
+margin = 50  # margen para ajustar el tamaño del rectángulo
+rect_top_left = (margin, margin)
+rect_bottom_right = (frame_width - margin, frame_height - margin)
+
+while True:
+    # Capturar el siguiente frame
+    ret, frame = cap.read()
+    if not ret:
+        print("Error al capturar frame")
+        break
+
+    frame = cv.flip(frame, 1)
+
+    # Convertir el frame a escala de grises
+    gray_frame = cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
+
+    # Calcular el flujo óptico para mover la pelotita
+    new_ball_pos, st, err = cv.calcOpticalFlowPyrLK(prev_gray, gray_frame, ball_pos, None, **lk_params)
+
+    # Si se detecta el nuevo movimiento, actualizar la posición de la pelotita
+    if new_ball_pos is not None:
+        ball_pos = new_ball_pos
+
+        # Obtener las coordenadas de la pelotita
+        a, b = ball_pos.ravel()
+
+        # Verificar si la pelotita se acerca a los bordes del rectángulo azul
+        if (a <= rect_top_left[0] + 20 or a >= rect_bottom_right[0] - 20 or
+                b <= rect_top_left[1] + 20 or b >= rect_bottom_right[1] - 20):
+            # Si se acerca a los bordes, volver al centro
+            ball_pos = np.array([[frame_width // 2, frame_height // 2]], dtype=np.float32)
+            ball_pos = ball_pos[:, np.newaxis, :]
+
+        # Dibujar la pelotita en su nueva posición
+        a, b = ball_pos.ravel()
+        frame = cv.circle(frame, (int(a), int(b)), 20, (0, 255, 0), -1)
+
+    # Dibujar el recuadro azul (casi del tamaño de la pantalla)
+    frame = cv.rectangle(frame, rect_top_left, rect_bottom_right, (255, 0, 0), 5)
+
+    # Mostrar solo una ventana con la pelotita en movimiento
+    cv.imshow('Pelota en movimiento', frame)
+
+    # Actualizar el frame anterior para el siguiente cálculo
+    prev_gray = gray_frame.copy()
+
+    # Presionar 'Esc' para salir
+    if cv.waitKey(30) & 0xFF == 27:
+        break
+
+# Liberar la captura y destruir todas las ventanas
+cap.release()
+cv.destroyAllWindows()
+```
+
+### Actividad Filtros como el Snap
 
 
 
+### Actividad imagen convolucion 
+```
+import cv2 as cv
+import numpy as np
+
+# Cargar la imagen en escala de grises
+img = cv.imread('bob.png', 0)
+
+# Obtener el tamaño original de la imagen
+x, y = img.shape
+
+# Crear una nueva imagen para el escalado al doble
+scaled_img = np.zeros((x * 2, y * 2), dtype=np.uint8)
+
+# Escalar la imagen al doble utilizando ciclos for
+for i in range(x * 2):
+    for j in range(y * 2):
+        # Encontrar los índices correspondientes en la imagen original
+        orig_x = i // 2
+        orig_y = j // 2
+        # Copiar el valor del píxel de la imagen original
+        scaled_img[i, j] = img[orig_x, orig_y]
+
+# Crear una nueva imagen para almacenar la versión suavizada
+smoothed_img = np.zeros_like(scaled_img)
+
+# Aplicar suavizado usando un filtro de promedio de 3x3
+for i in range(1, scaled_img.shape[0] - 1):
+    for j in range(1, scaled_img.shape[1] - 1):
+        # Tomar el promedio de un bloque de 3x3 alrededor del píxel central
+        neighborhood = scaled_img[i-1:i+2, j-1:j+2]
+        smoothed_img[i, j] = np.mean(neighborhood)
+
+# Mostrar la imagen original, la escalada y la suavizada
+cv.imshow('Imagen Original', img)
+cv.imshow('Imagen Escalada x2', scaled_img)
+cv.imshow('Imagen Suavizada', smoothed_img)
+cv.waitKey(0)
+cv.destroyAllWindows()
+
+```
