@@ -1,8 +1,7 @@
 import glfw
-from OpenGL.GL import glClearColor, glEnable, glClear, glLoadIdentity, glTranslatef, glRotatef, glMatrixMode
-from OpenGL.GL import glBegin, glColor3f, glVertex3f, glEnd, glFlush, glViewport
-from OpenGL.GL import GL_COLOR_BUFFER_BIT, GL_DEPTH_BUFFER_BIT, GL_DEPTH_TEST, GL_QUADS, GL_PROJECTION, GL_MODELVIEW
-from OpenGL.GLU import gluPerspective
+from OpenGL.GL import *
+from OpenGL.GLU import *
+
 import sys
 
 # Variables globales
