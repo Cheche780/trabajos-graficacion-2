@@ -1,8 +1,9 @@
 import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import gluPerspective, gluLookAt
-import sys
+from OpenGL.GLU import gluNewQuadric, gluCylinder
 
+import sys
 
 def init():
     """Configuración inicial de OpenGL"""
@@ -14,9 +15,8 @@ def init():
     gluPerspective(60, 1.0, 0.1, 100.0)  # Campo de visión más amplio
     glMatrixMode(GL_MODELVIEW)
 
-
 def draw_cube():
-    """Dibuja el cubo (base de la casa)"""
+    """Dibuja un cubo"""
     glBegin(GL_QUADS)
     glColor3f(0.8, 0.5, 0.2)  # Marrón para todas las caras
 
@@ -59,33 +59,45 @@ def draw_cube():
     glVertex3f(-1, 0, 1)
     glEnd()
 
+def draw_cylinder(radius, height, slices):
+    """Dibuja un cilindro"""
+    glPushMatrix()
+    glTranslatef(0, height / 2, 0)
+    quad = gluNewQuadric()
+    gluCylinder(quad, radius, radius, height, slices, 1)
+    glPopMatrix()
 
-def draw_roof():
-    """Dibuja el techo (pirámide)"""
-    glBegin(GL_TRIANGLES)
-    glColor3f(0.9, 0.1, 0.1)  # Rojo brillante
+def draw_traffic_light():
+    """Dibuja un semáforo en el centro de la escena"""
+    glPushMatrix()
+    glTranslatef(0, 0, 0)  # Posición central
 
-    # Frente
-    glVertex3f(-1, 1, 1)
-    glVertex3f(1, 1, 1)
-    glVertex3f(0, 2, 0)
+    # Poste del semáforo
+    glColor3f(0.1, 0.1, 0.1)  # Negro
+    draw_cylinder(0.2, 5, 20)
 
-    # Atrás
-    glVertex3f(-1, 1, -1)
-    glVertex3f(1, 1, -1)
-    glVertex3f(0, 2, 0)
+    # Caja de luces
+    glPushMatrix()
+    glTranslatef(0, 5, 0)  # Elevar por encima del poste
+    glScalef(0.5, 1, 0.5)
+    glColor3f(0.2, 0.2, 0.2)  # Gris oscuro
+    draw_cube()
+    glPopMatrix()
 
-    # Izquierda
-    glVertex3f(-1, 1, -1)
-    glVertex3f(-1, 1, 1)
-    glVertex3f(0, 2, 0)
+    # Luces del semáforo
+    glPushMatrix()
+    glTranslatef(0, 5.5, 0.3)  # Frente de la caja
+    radii = [0.15, 0.15, 0.15]
+    colors = [(1, 0, 0), (1, 1, 0), (0, 1, 0)]  # Rojo, amarillo, verde
+    for i, color in enumerate(colors):
+        glColor3f(*color)
+        glPushMatrix()
+        glTranslatef(0, -0.3 * i, 0)
+        draw_cylinder(radii[i], 0.1, 20)
+        glPopMatrix()
+    glPopMatrix()
 
-    # Derecha
-    glVertex3f(1, 1, -1)
-    glVertex3f(1, 1, 1)
-    glVertex3f(0, 2, 0)
-    glEnd()
-
+    glPopMatrix()
 
 def draw_ground():
     """Dibuja un plano para representar el suelo o calle"""
@@ -99,41 +111,44 @@ def draw_ground():
     glVertex3f(-20, 0, -20)
     glEnd()
 
-
-def draw_house():
-    """Dibuja una casa (base + techo)"""
+def draw_house(height_scale=1.0):
+    """Dibuja una casa con una altura ajustable."""
+    glPushMatrix()
+    glScalef(2, height_scale, 2)  # Escalar verticalmente
     draw_cube()  # Base de la casa
-    draw_roof()  # Techo
-
+    glPopMatrix()
 
 def draw_scene():
-    """Dibuja toda la escena con 4 casas"""
+    """Dibuja toda la escena con 4 casas y un semáforo."""
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
 
     # Configuración de la cámara
-    gluLookAt(10, 8, 15,  # Posición de la cámara
+    gluLookAt(20, 15, 25,  # Posición de la cámara
               0, 0, 0,  # Punto al que mira
               0, 1, 0)  # Vector hacia arriba
 
     # Dibujar el suelo
     draw_ground()
 
-    # Dibujar las casas en diferentes posiciones
-    positions = [
-        (-5, 0, -5),  # Casa 1
-        (5, 0, -5),  # Casa 2
-        (-5, 0, 5),  # Casa 3
-        (5, 0, 5)  # Casa 4
+    # Dibujar las casas en diferentes posiciones y alturas
+    positions_and_heights = [
+        ((-5, 0, -5), 3.0),  # Casa 1, altura normal
+        ((5, 0, -5), 5.5),   # Casa 2, más alta
+        ((-5, 0, 5), 7.75),  # Casa 3, más baja
+        ((5, 0, 5), 10.0)     # Casa 4, la más alta
     ]
-    for pos in positions:
+
+    for pos, height in positions_and_heights:
         glPushMatrix()
         glTranslatef(*pos)  # Mover la casa a la posición actual
-        draw_house()  # Dibujar la casa
+        draw_house(height_scale=height)  # Dibujar la casa con altura personalizada
         glPopMatrix()
 
-    glfw.swap_buffers(window)
+    # Dibujar el semáforo centrado
+    draw_traffic_light()
 
+    glfw.swap_buffers(window)
 
 def main():
     global window
@@ -144,7 +159,7 @@ def main():
 
     # Crear ventana de GLFW
     width, height = 800, 600
-    window = glfw.create_window(width, height, "Escena con 4 casas", None, None)
+    window = glfw.create_window(width, height, "Escena con casas y semáforo", None, None)
     if not window:
         glfw.terminate()
         sys.exit()
@@ -159,7 +174,6 @@ def main():
         glfw.poll_events()
 
     glfw.terminate()
-
 
 if __name__ == "__main__":
     main()
