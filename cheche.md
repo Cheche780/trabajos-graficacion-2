@@ -6,7 +6,8 @@
 ## No. Control: 22121271
 
 ###  arriba yo 
-
+### mi apa
+### y tupac 
 
 #### actividad 1 
 
